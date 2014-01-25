@@ -11,7 +11,7 @@ Astelytics API
 # 2) access single survey
 ### requires survey_id
 
-<pre>GET
+<pre>POST
 /survey/single</pre>
 	
 # 3) access surveys matching user
