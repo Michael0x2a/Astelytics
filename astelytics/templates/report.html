@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Report{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="/static/nv.d3.min.css" type="text/css" rel="stylesheet">
+{% endblock%}
+
+{% block content %}
+    <h1>Report</h1>
+    
+    {% for question, response in responses.items() %}
+        <div id="{{ response['unique-id'] }}" class="response {{ response['display']['default'] }}">
+            <p>
+                {{ question }}
+            </p>
+            
+            <div class="{{ response['display']['default'] }}">
+                <svg height="{{ response['display']['height'] }}"></svg>
+            </div>
+        </div>
+    
+    {% endfor %}
+        
+    <script src="/static/jquery-2.1.0.min.js" type="text/javascript"></script>
+    <script src="/static/d3.v3.min.js" type="text/javascript"></script>
+    <script src="/static/nv.d3.min.js" type="text/javascript"></script>
+    <script src="/static/visualize.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            setChartUpdate();
+        });
+    </script>
+{% endblock %}
