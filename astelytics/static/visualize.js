@@ -79,7 +79,7 @@ function setChartUpdate() {
     
     setInterval(function() {
         $.ajax({
-            url: 'http://localhost:5000/survey/analyze/1', 
+            url: 'http://localhost:5000/survey/1/analytics', 
             dataType: "json",
             success: function(json) {
                 var question;

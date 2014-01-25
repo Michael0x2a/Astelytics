@@ -13,11 +13,13 @@ from flask_sockets import Sockets
 app = flask.Flask(__name__, static_folder='static')
 sockets = Sockets(app)
 
+# This is our "fake" database.
 db = {}
 
 
 
 def support_jsonp(json):
+    '''Optionally enables support for jsonp, if requested.'''
     callback = flask.request.args.get('callback', False)
     if callback:
         content = str(callback) + '(' + json + ')'
@@ -51,7 +53,8 @@ class SurveyView(FlaskView):
             output.append('</ul></body></html>')
             return '\n'.join(output)
             
-    def analyze(self, survey_id):
+    @route('<survey_id>/analytics')
+    def analytics(self, survey_id):
         survey_id = int(survey_id)
         if survey_id not in db:
             return {}
@@ -62,7 +65,8 @@ class SurveyView(FlaskView):
             json = flask.json.dumps(output)
             return support_jsonp(json)
             
-    def visualize(self, survey_id):
+    @route('<survey_id>/report')
+    def report(self, survey_id):
         survey_id = int(survey_id)
         return flask.render_template('report.html', responses=db[survey_id])
             
