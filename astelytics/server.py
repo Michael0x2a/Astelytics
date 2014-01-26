@@ -89,11 +89,12 @@ class SurveyView(FlaskView):
         return 'Return a combination of {0} and {1}'.format(question_id, other_id)
         
 
-app = flask.Flask(__name__, static_folder='static')
+application = flask.Flask(__name__, static_folder='static')
+app = application
 app.secret_key = ',*\xee\xd6tJ1Ja\xc8D\x9d!-\xa2k\xb6K\x9e\xb8\xff\xd7z\xc3'
 SurveyView.register(app)
     
 if __name__ == '__main__':    
-    app.run(debug=True)
+    application.run(debug=True)
     
     
