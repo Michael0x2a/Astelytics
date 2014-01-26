@@ -3,11 +3,14 @@
     <head>
         {% block head %}
         <title>{% block title %}{% endblock %}</title>
-        <link rel="stylesheet" href="/static/styles.css" rel="stylesheet">
+        <link rel="stylesheet" href="/static/universal.css" rel="stylesheet">
         {% endblock %}
     </head>
     <body>
-        <div id="wrapper">
+        <div id="header">
+            <a href="/"><img id="logo" src="/static/logo.png" /></a>
+        </div>
+        <div id="container">
         {% block content %}{% endblock %}
         </div>
     </body>

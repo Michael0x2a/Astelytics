@@ -51,6 +51,9 @@ class ResultsView(object):
     def json(self):
         return {u'results': self.questions}
         
+    def find_question(self, unique_id):
+        return [result for result in self.questions if result['unique_id'] == unique_id][0]
+        
     def _format_answers_by_type(self, type, answers):
         clean = [answer[1] for answer in answers.items()]
         if type == u'single selection':

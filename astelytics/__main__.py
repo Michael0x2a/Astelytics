@@ -6,6 +6,7 @@ import functools
 import copy
 import re
 
+import requests
 import flask
 from flask.ext.classy import FlaskView, route
 from flask_sockets import Sockets
@@ -37,28 +38,58 @@ def rank_words(words, n):
     # occurances of a word.
     return collections.Counter(clean).most_common(n)
     
+    
 class SurveyView(FlaskView):
     def __init__(self):
         super(FlaskView, self).__init__()
-        
+
     def index(self):
         return 'TODO: Write up instructions'
         
+    @route('<survey_id>/')
     def get(self, survey_id):
         return flask.render_template('submit.html')
+        
+    @route('<survey_id>/discover/')
+    def discover(self, survey_id):
+        response = requests.post(analysis.DB_URL + r"/survey/single", data={"survey_id": survey_id})
+        return support_jsonp(flask.json.dumps(response.json()))
             
-    @route('<survey_id>/analytics')
+    @route('<survey_id>/analytics/')
     def analytics(self, survey_id):
         survey = analysis.Survey(survey_id)
         results = analysis.ResultsView(survey)
         return support_jsonp(flask.json.dumps(results.json()))
             
-    @route('<survey_id>/report')
+    @route('<survey_id>/report/')
     def report(self, survey_id):
         survey = analysis.Survey(survey_id)
         results = analysis.ResultsView(survey)
-        return flask.render_template('report.html', results=results)
+        return flask.render_template('report.html', results=results, survey_id=survey_id)
     
+    @route('<survey_id>/question/<question_id>/')
+    def get(self, survey_id, question_id):
+        survey = analysis.Survey(survey_id)
+        results = analysis.ResultsView(survey)
+        master = results.find_question(question_id)
+        similar = [result for result in results.questions if result['type'] == master['type']]
+        
+        return flask.render_template('question.html', result=master)
+        
+    @route('<survey_id>/question/<question_id>/suggest/')
+    def suggest(self, survey_id, question_id):
+        survey = analysis.Survey(survey_id)
+        results = analysis.ResultsView(survey)
+        master = results.find_question(question_id)
+        similar = [result for result in results.questions if result['type'] == master['type']]
+        
+        return 'Return similar questions to {0}'.format(question_id)
+        
+    @route('<survey_id>/question/<question_id>/<other_id>/')
+    def combine(self, survey_id, question_id, other_id):
+        return 'Return a combination of {0} and {1}'.format(question_id, other_id)
+        
+
     
 if __name__ == '__main__':
     SurveyView.register(app)

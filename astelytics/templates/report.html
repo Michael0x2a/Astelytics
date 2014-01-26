@@ -12,7 +12,9 @@
     
     {% for result in results.questions %}
         <div id="{{ result['unique_id'] }}" class="response {{ result['type'] }}">
-            <h2>{{ result['question'] }}</h2>
+            <h2><a href="/survey/{{ survey_id }}/question/{{ result['unique_id'] }}">
+                {{ result['question'] }}
+            </a></h2>
             <select name="view-change" class="view-change">
             </select>
             
@@ -30,7 +32,7 @@
     <script src="/static/visualize.js" type="text/javascript"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            updater = new Updater('001', 1000);
+            updater = new Updater('{{ server_id }}', 10000);
             
             {% for result in results.questions %}
                 updater.attach(

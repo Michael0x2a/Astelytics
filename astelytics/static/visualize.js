@@ -2,7 +2,6 @@ function BarChart(target, question) {
     'use strict';
     this.target = target;
     this.question = question;
-    this.type = 'single selection';
 }
 
 BarChart.prototype.createChart = function (data) {
@@ -52,7 +51,6 @@ function PieChart(target, question) {
     'use strict';
     this.target = target;
     this.question = question;
-    this.type = 'single statement';
 }
 
 PieChart.prototype.createChart = function (data) {
@@ -107,7 +105,6 @@ function WordCloud(target, question) {
     
     this.target = target;
     this.question = question;
-    this.type = 'text';
 }
 
 WordCloud.prototype.makeChart = function (data) {
@@ -164,6 +161,67 @@ WordCloud.prototype.prepareData = function (data) {
 
 // ------------------------
 
+function StackedBarChart(target, questions) {
+    'use strict';
+    this.target = target;
+    this.questions = questions;
+}
+
+StackedBarChart.prototype.makeChart = function (datas) {
+    'use strict';
+    this.chart = nv.models.multiBarChart();
+    nv.utils.windowResize(this.chart.upgrade);
+    nv.addGraph(this.chart);
+};
+
+StackedBarChart.prototype.update = function(datas) {
+    'use strict';
+    var stream = datas.map(function (data, index) {
+        return { key: this.questions[index], value: data };
+    });
+    
+    d3.select(this.target)
+        .datum(stream)
+        .transition()
+        .duration(500)
+        .call(this.chart);
+        
+    nv.utils.windowResize(this.chart.update);
+};
+
+// ---------------------
+
+function StackedAreaData(target, questions) {
+    'use strict';
+    this.target = target;
+    this.questions = questions;
+}
+
+StackedAreaData.prototype.makeChart = function (datas) {
+    this.chart = nv.models.stackedAreaChart()
+        .x(function (d) { return d[0]; })
+        .y(function (d) { return d[1]; })
+        .clipEdge(true);
+        
+    nv.utils.windowResize(this.chart.update);
+    nv.addGraph(this.chart);
+};
+
+StackedAreaData.prototype.update = function (datas) {
+    var stream = datas.map(function (data, index) {
+        return { key: this.questions[index], value: data };
+    });
+    
+    d3.select(this.target)
+        .datum(stream)
+        .transition()
+        .duration(500)
+        .call(chart);
+        
+    nv.utils.windowResize(this.chart.update);
+}
+
+
 // ---------------------
 
 function Updater(survey_id, updateSpeed) {
@@ -208,8 +266,6 @@ Updater.prototype.launchChart = function (type, desiredView, target, question) {
     'use strict'
     var selectorTarget = '#' + target + ' .chart svg';
     $(selectorTarget).empty();
-    console.log(desiredView);
-    console.log(this);
     var chart = new this.associations[type][desiredView](selectorTarget, question);
     chart.createChart();
     
@@ -220,7 +276,8 @@ Updater.prototype.start = function () {
     'use strict';
     var survey_id = this.survey_id;
     var charts = this.charts;
-    setInterval(function() {
+    
+    function update() {
         $.ajax({
             url: 'http://localhost:5000/survey/' + survey_id + '/analytics', 
             dataType: "json",
@@ -235,5 +292,9 @@ Updater.prototype.start = function () {
                 //alert(textStatus + " | " + errorThrown);
             }
         });
-    }, this.updateSpeed);
+    }
+    
+    // force a refresh at the start.
+    update();
+    setInterval(update, this.updateSpeed);
 };
