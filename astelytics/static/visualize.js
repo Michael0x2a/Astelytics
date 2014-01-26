@@ -2,6 +2,7 @@ function BarChart(target, question) {
     'use strict';
     this.target = target;
     this.question = question;
+    this.previous = [];
 }
 
 BarChart.prototype.createChart = function (data) {
@@ -51,6 +52,7 @@ function PieChart(target, question) {
     'use strict';
     this.target = target;
     this.question = question;
+    this.previous = [];
 }
 
 PieChart.prototype.createChart = function (data) {
@@ -87,17 +89,6 @@ PieChart.prototype.prepareData = function (data) {
     return arr;
 };
 
-// -----------
-
-function MultiBarHorizontalData(target, question) {
-    'use strict';
-    this.target = target;
-    this.question = question;
-    
-}
-
-
-
 // --------
 
 function WordCloud(target, question) {
@@ -105,12 +96,13 @@ function WordCloud(target, question) {
     
     this.target = target;
     this.question = question;
+    this.previous = [];
 }
 
-WordCloud.prototype.makeChart = function (data) {
+WordCloud.prototype.createChart = function (data) {
     'use strict';
     this.chart = d3.layout.cloud()
-        //.words(data)
+        .words(data)
         .padding(5)
         .rotate(function() { return ~~(Math.random() * 2) * 0; })
         .font("Impact")
@@ -165,9 +157,10 @@ function StackedBarChart(target, questions) {
     'use strict';
     this.target = target;
     this.questions = questions;
+    this.previous = [];
 }
 
-StackedBarChart.prototype.makeChart = function (datas) {
+StackedBarChart.prototype.createChart = function (datas) {
     'use strict';
     this.chart = nv.models.multiBarChart();
     nv.utils.windowResize(this.chart.upgrade);
@@ -195,9 +188,11 @@ function StackedAreaData(target, questions) {
     'use strict';
     this.target = target;
     this.questions = questions;
+    this.previous = [];
 }
 
-StackedAreaData.prototype.makeChart = function (datas) {
+StackedAreaData.prototype.createChart = function (datas) {
+    'use strict';
     this.chart = nv.models.stackedAreaChart()
         .x(function (d) { return d[0]; })
         .y(function (d) { return d[1]; })
@@ -208,6 +203,7 @@ StackedAreaData.prototype.makeChart = function (datas) {
 };
 
 StackedAreaData.prototype.update = function (datas) {
+    'use strict';
     var stream = datas.map(function (data, index) {
         return { key: this.questions[index], value: data };
     });
@@ -216,10 +212,31 @@ StackedAreaData.prototype.update = function (datas) {
         .datum(stream)
         .transition()
         .duration(500)
-        .call(chart);
+        .call(this.chart);
         
     nv.utils.windowResize(this.chart.update);
+};
+
+// ---------------------
+
+function LiteralText(target, question) {
+    'use strict';
+    this.target = target;
+    this.question = question;
+    this.previous = [];
 }
+
+LiteralText.prototype.createChart = function (data) {
+    'use strict';
+    alert(data);
+    $(this.target).html(JSON.stringify(data));
+    
+};
+
+LiteralText.prototype.update = function (data) {
+    'use strict';
+    $(this.target).html(JSON.stringify(data));
+};
 
 
 // ---------------------
@@ -232,16 +249,43 @@ function Updater(survey_id, updateSpeed) {
     this.associations = {
         'single selection': {
             'bar': BarChart, 
-            'pie': PieChart
+            'pie': PieChart,
+            'text': LiteralText
         },
-        'text': {
-            'word cloud': WordCloud
+        'multiple selection': {
+            'bar': BarChart,
+            'text': LiteralText
+        },
+        'list question': {
+            'bar': BarChart, 
+            'pie': PieChart,
+            'text': LiteralText
+        },
+        'short text': {
+            'word cloud': WordCloud,
+            'text': LiteralText
+        },
+        'paragraph text': {
+            'word cloud': WordCloud,
+            'text': LiteralText
         }
     };
+    
+    this.defaults = {
+        'single selection': 'pie',
+        'multiple selection': 'bar',
+        'list question': 'bar',
+        'short text': 'word cloud',
+        'paragraph text': 'word cloud'
+    }
 }
 
 Updater.prototype.attach = function (target, question, type, defaultDisplay) {
     'use strict';
+    
+    if (defaultDisplay === null) {
+        defaultDisplay = this.defaults[type];
+    }
     
     var options = $("#" + target + " .view-change");
     
@@ -267,7 +311,7 @@ Updater.prototype.launchChart = function (type, desiredView, target, question) {
     var selectorTarget = '#' + target + ' .chart svg';
     $(selectorTarget).empty();
     var chart = new this.associations[type][desiredView](selectorTarget, question);
-    chart.createChart();
+    chart.createChart('test');
     
     this.charts[target] = chart;
 };
