@@ -10,14 +10,14 @@
 {% block content %}
     <h1>Report</h1>
     
-    {% for question, response in responses.items() %}
-        <div id="{{ response['unique-id'] }}" class="response {{ response['display']['default'] }}">
-            <p>
-                {{ question }}
-            </p>
+    {% for result in results.questions %}
+        <div id="{{ result['unique_id'] }}" class="response {{ result['type'] }}">
+            <h2>{{ result['question'] }}</h2>
+            <select name="view-change" class="view-change">
+            </select>
             
-            <div class="{{ response['display']['default'] }}">
-                <svg height="{{ response['display']['height'] }}"></svg>
+            <div class="chart {{ result['type'] }}">
+                <svg height="300px"></svg>
             </div>
         </div>
     
@@ -30,7 +30,17 @@
     <script src="/static/visualize.js" type="text/javascript"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            setChartUpdate();
+            updater = new Updater('001', 1000);
+            
+            {% for result in results.questions %}
+                updater.attach(
+                    '{{ result['unique_id'] }}', 
+                    '{{ result['question'] }}', 
+                    '{{ result['type'] }}', 
+                    'bar');
+            {% endfor %}
+            
+            updater.start();
         });
     </script>
 {% endblock %}

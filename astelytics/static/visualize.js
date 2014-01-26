@@ -1,43 +1,84 @@
-function makeBarChart() {
+function BarChart(target, question) {
     'use strict';
-    
-    var chart = nv.models.discreteBarChart()
+    this.target = target;
+    this.question = question;
+    this.type = 'single selection';
+}
+
+BarChart.prototype.createChart = function (data) {
+    'use strict';
+    data = this.prepareData(data);
+
+    this.chart = nv.models.discreteBarChart()
         .x(function (d) { return d.label; })
         .y(function (d) { return d.value; })
         .staggerLabels(false)
         .tooltips(true)
         .showValues(true);
         
-    nv.utils.windowResize(chart.update);
-    nv.addGraph(chart);
-    
-    return chart;
-}
+    nv.utils.windowResize(this.chart.update);
+    nv.addGraph(this.chart);
+};
 
-function formatToBarChartData(question, data) {
+BarChart.prototype.update = function (data) {
     'use strict';
+    
+    data = this.prepareData(data);
+    
+    d3.select(this.target)
+        .datum(data)
+        .transition().duration(500)
+        .call(this.chart);
+};
+
+BarChart.prototype.prepareData = function (data) {
+    'use strict';
+    
+    var arr = [];
+    var i;
+    for (i in data) {
+        arr.push({ "label": i, "value": data[i] });
+    }
     
     return [{
-        key: question,
-        values: formatToPieChartData(question, data)
+        key: this.question,
+        values: arr
     }];
+};
+
+// ------------
+
+function PieChart(target, question) {
+    'use strict';
+    this.target = target;
+    this.question = question;
+    this.type = 'single statement';
 }
 
-function makePieChart() {
+PieChart.prototype.createChart = function (data) {
     'use strict';
+    data = this.prepareData(data);
     
-    var chart = nv.models.pieChart()
+    this.chart = nv.models.pieChart()
         .x(function (d) { return d.label; })
         .y(function (d) { return d.value; })
         .showLabels(true);
         
-    nv.utils.windowResize(chart.update);
-    nv.addGraph(chart);
-    
-    return chart;
-}
+    nv.utils.windowResize(this.chart.update);
+    nv.addGraph(this.chart);
+};
 
-function formatToPieChartData(question, data) {
+PieChart.prototype.update = function (data) {
+    'use strict';
+    data = this.prepareData(data);
+    
+    d3.select(this.target)
+        .datum(data)
+        .transition().duration(500)
+        .call(this.chart);
+};
+
+PieChart.prototype.prepareData = function (data) {
     'use strict';
     var arr = [];
     var i;
@@ -46,29 +87,48 @@ function formatToPieChartData(question, data) {
     }
     
     return arr;
+};
+
+// -----------
+
+function MultiBarHorizontalData(target, question) {
+    'use strict';
+    this.target = target;
+    this.question = question;
+    
 }
 
-function makeWordCloud() {
+
+
+// --------
+
+function WordCloud(target, question) {
     'use strict';
-    var chart = d3.layout.cloud()
+    
+    this.target = target;
+    this.question = question;
+    this.type = 'text';
+}
+
+WordCloud.prototype.makeChart = function (data) {
+    'use strict';
+    this.chart = d3.layout.cloud()
         //.words(data)
         .padding(5)
         .rotate(function() { return ~~(Math.random() * 2) * 0; })
         .font("Impact")
         .fontSize(function(d) { return d.size; });
-        
-    chart.kind = 'word cloud';
-    return chart;
-}
+};
 
-function updateWordCloud(target, chart, data) {
+WordCloud.prototype.update = function (data) {
     'use strict';
     
-    d3.select(target).text('');
+    d3.select(this.target).text('');
 
     var fill = d3.scale.category20();
+    
     function draw(words) {
-        d3.select(target)
+        d3.select(this.target)
             .attr("width", 400)
             .attr("height", 300)
           .append("g")
@@ -86,81 +146,94 @@ function updateWordCloud(target, chart, data) {
             .text(function(d) { return d.text; });
     }
             
-    chart = chart
+    this.chart
         .words(data)
         .on("end", draw)
         .start();    
-        
-    return chart
-}
+};
 
-function formatToWordCloudData(target, data) {
+WordCloud.prototype.prepareData = function (data) {
+    'use strict';
     return data.map(function (t) { 
         return {
             "text": t[0],
-            "size": 10 + t[1] * 10
+            "size": Math.min(10 + t[1] * 20, 100)
         };
     });
-}
+};
 
-function updateChart(target, chart, data) {
+// ------------------------
+
+// ---------------------
+
+function Updater(survey_id, updateSpeed) {
     'use strict';
-    
-    if (chart.kind === 'word cloud') {
-        var temp = data.map(function (x) { return x[0] + x[1]}).join();;
-        if (chart.previous !== temp) {
-            updateWordCloud(target, chart, data);
-            
-            chart.previous = temp;
+    this.survey_id = survey_id;
+    this.updateSpeed = updateSpeed;
+    this.charts = {};
+    this.associations = {
+        'single selection': {
+            'bar': BarChart, 
+            'pie': PieChart
+        },
+        'text': {
+            'word cloud': WordCloud
         }
-        return chart;
-    }
-    
-    d3.select(target)
-        .datum(data)
-        .transition().duration(500)
-        .call(chart);
-        
-    return chart;
+    };
 }
 
-function setChartUpdate() {
+Updater.prototype.attach = function (target, question, type, defaultDisplay) {
     'use strict';
     
-    var mapping = {
-        'bar': [makeBarChart, formatToBarChartData],
-        'pie': [makePieChart, formatToPieChartData],
-        'text': [makeWordCloud, formatToWordCloudData]
-    };
+    var options = $("#" + target + " .view-change");
     
+    this.launchChart(type, defaultDisplay, target, question);
     
-    var charts = {};
-    
-    $('.response').each(function (index, elem) {
-        var chartType = $(elem).attr('class').split(' ')[1];
-        var chart = mapping[chartType][0]();
-        
-        charts[$(elem).attr('id')] = chart;
+    var self = this;
+    options.change(function () {
+        self.launchChart(type, this.value, target, question);
     });
     
+    options.append('<option value="' + defaultDisplay + '">' + defaultDisplay + '</option>');
+    
+    var view;
+    for (view in this.associations[type]) {
+        if (view !== defaultDisplay) {
+            options.append('<option value="' + view + '">' + view + '</option>');
+        }
+    }  
+};
+
+Updater.prototype.launchChart = function (type, desiredView, target, question) {
+    'use strict'
+    var selectorTarget = '#' + target + ' .chart svg';
+    $(selectorTarget).empty();
+    console.log(desiredView);
+    console.log(this);
+    var chart = new this.associations[type][desiredView](selectorTarget, question);
+    chart.createChart();
+    
+    this.charts[target] = chart;
+};
+
+Updater.prototype.start = function () { 
+    'use strict';
+    var survey_id = this.survey_id;
+    var charts = this.charts;
     setInterval(function() {
         $.ajax({
-            url: 'http://localhost:5000/survey/1/analytics', 
+            url: 'http://localhost:5000/survey/' + survey_id + '/analytics', 
             dataType: "json",
             success: function(json) {
-                var question;
-                for (question in json) {
-                    var response = json[question];
-                    var formatter = mapping[response['display']['default']][1];
-                    var formatted = formatter(question, response['data']);
-                    
-                    var unique_id = response['unique-id'];
-                    updateChart('#' + unique_id + ' svg', charts[unique_id], formatted);
+                var index;
+                for (index in json.results) {
+                    var question = json.results[index];
+                    charts[question.unique_id].update(question.answers);
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 //alert(textStatus + " | " + errorThrown);
             }
         });
-    }, 500);
-}
+    }, this.updateSpeed);
+};
