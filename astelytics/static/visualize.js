@@ -323,7 +323,7 @@ Updater.prototype.start = function () {
     
     function update() {
         $.ajax({
-            url: 'http://localhost:5000/survey/' + survey_id + '/analytics', 
+            url: '/survey/' + survey_id + '/analytics', 
             dataType: "json",
             success: function(json) {
                 var index;
