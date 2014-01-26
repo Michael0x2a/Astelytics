@@ -9,7 +9,6 @@ import re
 import requests
 import flask
 from flask.ext.classy import FlaskView, route
-from flask_sockets import Sockets
 
 import analysis
 import json
